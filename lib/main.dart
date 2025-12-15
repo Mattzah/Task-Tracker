@@ -64,6 +64,35 @@ class _TodoListScreenState extends State<TodoListScreen> {
     _loadCustomCategories(); // Load the tasks when the app starts
   }
 
+  void _clearCompletedTasks() {
+    final completedCount = _todoItems.where((task) => task.isCompleted).length;
+
+    if (completedCount == 0) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Clear Completed'),
+        content: Text('Delete $completedCount completed task${completedCount == 1 ? '' : 's'}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _todoItems.removeWhere((task) => task.isCompleted);
+                _saveTasks();
+              });
+              Navigator.pop(context);
+            },
+            child: Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
   // Save the task list to shared preferences
   Future<void> _saveTasks() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -393,6 +422,9 @@ class _TodoListScreenState extends State<TodoListScreen> {
         return false;
       },
       child: ListTile(
+        dense: true,  // Makes the tile more compact
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),  // Reduces vertical padding
+        visualDensity: VisualDensity(vertical: -2),  // Further reduces height
         leading: Container(
           width: 10,
           color: _getCategoryColor(task.category),
@@ -400,6 +432,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
         title: Text(
           task.description,
           style: TextStyle(
+            fontSize: 14,  // Smaller font (default is ~16)
             decoration: task.isCompleted
                 ? TextDecoration.lineThrough
                 : TextDecoration.none,
@@ -421,7 +454,10 @@ class _TodoListScreenState extends State<TodoListScreen> {
         backgroundColor: Colors.blue,
         centerTitle: true,
         actions: [
-          // Add filter button to the app bar
+          IconButton(
+            icon: Icon(Icons.delete_sweep, color: Colors.white),
+            onPressed: _clearCompletedTasks,
+          ),
           IconButton(
             icon: Icon(Icons.filter_list, color: Colors.white),
             onPressed: _showFilterDialog,
@@ -486,10 +522,20 @@ class _TodoListScreenState extends State<TodoListScreen> {
 
   // Method to get filtered tasks
   List<Task> get _filteredTasks {
+    List<Task> filtered;
     if (_currentFilter == 'All Categories') {
-      return _todoItems;
+      filtered = List.from(_todoItems);
+    } else {
+      filtered = _todoItems.where((task) => task.category == _currentFilter).toList();
     }
-    return _todoItems.where((task) => task.category == _currentFilter).toList();
+
+    // Sort: uncompleted tasks first, then completed tasks
+    filtered.sort((a, b) {
+      if (a.isCompleted == b.isCompleted) return 0;
+      return a.isCompleted ? 1 : -1;
+    });
+
+    return filtered;
   }
 
   // Method to show filter dialog
