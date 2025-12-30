@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert'; // For JSON encoding/decoding
+import 'dart:convert';
 
 void main() {
-  runApp(TodoApp());
+  runApp(const TodoApp());
 }
 
 class TodoApp extends StatelessWidget {
+  const TodoApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -14,8 +16,8 @@ class TodoApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: TodoListScreen(),
-      debugShowCheckedModeBanner: false, // Hide the debug banner
+      home: const TodoListScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -46,8 +48,10 @@ class Task {
 }
 
 class TodoListScreen extends StatefulWidget {
+  const TodoListScreen({super.key});
+
   @override
-  _TodoListScreenState createState() => _TodoListScreenState();
+  createState() => _TodoListScreenState();
 }
 
 class _TodoListScreenState extends State<TodoListScreen> {
@@ -55,7 +59,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
   final List<Task> _todoItems = [];
   // Custom categories will be stored in SharedPreferences
   List<String> _customCategories = [];
-  Map<String, Color> _categoryColors = {};
+  final Map<String, Color> _categoryColors = {};
 
   @override
   void initState() {
@@ -72,12 +76,12 @@ class _TodoListScreenState extends State<TodoListScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Clear Completed'),
+        title: const Text('Clear Completed'),
         content: Text('Delete $completedCount completed task${completedCount == 1 ? '' : 's'}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () {
@@ -87,7 +91,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
               });
               Navigator.pop(context);
             },
-            child: Text('Delete'),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -121,12 +125,12 @@ class _TodoListScreenState extends State<TodoListScreen> {
       _customCategories = prefs.getStringList('customCategories') ?? [];
 
       // Load colors for each category
-      _customCategories.forEach((category) {
+      for (var category in _customCategories) {
         final colorValue = prefs.getInt('category_color_$category');
         if (colorValue != null) {
           _categoryColors[category] = Color(colorValue);
         }
-      });
+      }
     });
   }
 
@@ -136,11 +140,11 @@ class _TodoListScreenState extends State<TodoListScreen> {
     prefs.setStringList('customCategories', _customCategories);
 
     // Save color for each category
-    _customCategories.forEach((category) {
+    for (var category in _customCategories) {
       if (_categoryColors.containsKey(category)) {
         prefs.setInt('category_color_$category', _categoryColors[category]!.value);
       }
-    });
+    }
   }
 
   // Method to add a new custom category with color
@@ -161,10 +165,8 @@ class _TodoListScreenState extends State<TodoListScreen> {
 
   // Function to show the dialog box for adding a new task
   Future<void> _showAddTodoDialog() async {
-    final TextEditingController _taskController = TextEditingController();
-    String? _selectedCategory;
-    Color? _selectedColor;
-    final TextEditingController _newCategoryController = TextEditingController();
+    final TextEditingController taskController = TextEditingController();
+    String? selectedCategory;
 
     await showDialog(
       context: context,
@@ -177,16 +179,16 @@ class _TodoListScreenState extends State<TodoListScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextField(
-                      controller: _taskController,
-                      decoration: InputDecoration(
+                      controller: taskController,
+                      decoration: const InputDecoration(
                         labelText: 'Enter a new task',
                       ),
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     // Category Dropdown with Add New option
                     DropdownButtonFormField<String>(
-                      value: _selectedCategory,
-                      decoration: InputDecoration(
+                      value: selectedCategory,
+                      decoration: const InputDecoration(
                         labelText: 'Select Category',
                       ),
                       items: [
@@ -199,14 +201,14 @@ class _TodoListScreenState extends State<TodoListScreen> {
                                     width: 16,
                                     height: 16,
                                     color: _getCategoryColor(category),
-                                    margin: EdgeInsets.only(right: 8),
+                                    margin: const EdgeInsets.only(right: 8),
                                   ),
                                   Text(category),
                                 ],
                               ),
                             )
                         ),
-                        DropdownMenuItem(
+                        const DropdownMenuItem(
                           value: 'New Category',
                           child: Text('+ Add New Category'),
                         ),
@@ -217,7 +219,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
                           _showNewCategoryDialog(context);
                         } else {
                           setState(() {
-                            _selectedCategory = value;
+                            selectedCategory = value;
                           });
                         }
                       },
@@ -229,16 +231,16 @@ class _TodoListScreenState extends State<TodoListScreen> {
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
-                    child: Text('Cancel'),
+                    child: const Text('Cancel'),
                   ),
                   TextButton(
                     onPressed: () {
-                      if (_taskController.text.isNotEmpty && _selectedCategory != null) {
-                        _addTodoItem(_taskController.text, _selectedCategory!);
+                      if (taskController.text.isNotEmpty && selectedCategory != null) {
+                        _addTodoItem(taskController.text, selectedCategory!);
                         Navigator.of(context).pop();
                       }
                     },
-                    child: Text('Add'),
+                    child: const Text('Add'),
                   ),
                 ],
               );
@@ -249,8 +251,8 @@ class _TodoListScreenState extends State<TodoListScreen> {
   }
   // New method to show color picker and create new category
   Future<void> _showNewCategoryDialog(BuildContext context) async {
-    final TextEditingController _categoryController = TextEditingController();
-    Color _selectedColor = Colors.blue;
+    final TextEditingController categoryController = TextEditingController();
+    Color selectedColor = Colors.blue;
 
     await showDialog(
       context: context,
@@ -258,18 +260,18 @@ class _TodoListScreenState extends State<TodoListScreen> {
         return StatefulBuilder(
             builder: (context, setState) {
               return AlertDialog(
-                title: Text('Add New Category'),
+                title: const Text('Add New Category'),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextField(
-                      controller: _categoryController,
-                      decoration: InputDecoration(
+                      controller: categoryController,
+                      decoration: const InputDecoration(
                         labelText: 'Category Name',
                       ),
                     ),
-                    SizedBox(height: 16),
-                    Text('Choose a Color'),
+                    const SizedBox(height: 16),
+                    const Text('Choose a Color'),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
@@ -281,16 +283,16 @@ class _TodoListScreenState extends State<TodoListScreen> {
                           return GestureDetector(
                             onTap: () {
                               setState(() {
-                                _selectedColor = color;
+                                selectedColor = color;
                               });
                             },
                             child: Container(
                               width: 40,
                               height: 40,
-                              margin: EdgeInsets.symmetric(horizontal: 4),
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
                               decoration: BoxDecoration(
                                 color: color,
-                                border: _selectedColor == color
+                                border: selectedColor == color
                                     ? Border.all(color: Colors.black, width: 3)
                                     : null,
                               ),
@@ -306,19 +308,19 @@ class _TodoListScreenState extends State<TodoListScreen> {
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
-                    child: Text('Cancel'),
+                    child: const Text('Cancel'),
                   ),
                   TextButton(
                     onPressed: () {
-                      final categoryName = _categoryController.text.trim();
+                      final categoryName = categoryController.text.trim();
                       if (categoryName.isNotEmpty) {
-                        _addCustomCategory(categoryName, _selectedColor);
+                        _addCustomCategory(categoryName, selectedColor);
                         Navigator.of(context).pop();
                         // Reopen the task add dialog with the new category
                         _showAddTodoDialog();
                       }
                     },
-                    child: Text('Add Category'),
+                    child: const Text('Add Category'),
                   ),
                 ],
               );
@@ -347,20 +349,20 @@ class _TodoListScreenState extends State<TodoListScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Confirm Delete'),
+          title: const Text('Confirm Delete'),
           content: Text('Are you sure you want to delete "${task.description}"?'),
           actions: <Widget>[
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(false); // Cancel
               },
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(true); // Confirm delete
               },
-              child: Text('Delete'),
+              child: const Text('Delete'),
             ),
           ],
         );
@@ -414,8 +416,8 @@ class _TodoListScreenState extends State<TodoListScreen> {
       background: Container(
         color: Colors.red,
         alignment: Alignment.centerRight,
-        padding: EdgeInsets.only(right: 20),
-        child: Icon(Icons.delete, color: Colors.white),
+        padding: const EdgeInsets.only(right: 20),
+        child: const Icon(Icons.delete, color: Colors.white),
       ),
       confirmDismiss: (direction) async {
         await _confirmDeleteTask(index);
@@ -423,8 +425,8 @@ class _TodoListScreenState extends State<TodoListScreen> {
       },
       child: ListTile(
         dense: true,  // Makes the tile more compact
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),  // Reduces vertical padding
-        visualDensity: VisualDensity(vertical: -2),  // Further reduces height
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),  // Reduces vertical padding
+        visualDensity: const VisualDensity(vertical: -2),  // Further reduces height
         leading: Container(
           width: 10,
           color: _getCategoryColor(task.category),
@@ -447,7 +449,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           'Tasks',
           style: TextStyle(color: Colors.white),
         ),
@@ -455,11 +457,11 @@ class _TodoListScreenState extends State<TodoListScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(Icons.delete_sweep, color: Colors.white),
+            icon: const Icon(Icons.delete_sweep, color: Colors.white),
             onPressed: _clearCompletedTasks,
           ),
           IconButton(
-            icon: Icon(Icons.filter_list, color: Colors.white),
+            icon: const Icon(Icons.filter_list, color: Colors.white),
             onPressed: _showFilterDialog,
           ),
         ],
@@ -475,15 +477,15 @@ class _TodoListScreenState extends State<TodoListScreen> {
                 children: [
                   Text(
                     'Filtered by: $_currentFilter',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.blue,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   // Add a clear filter button
                   IconButton(
-                    icon: Icon(Icons.clear, color: Colors.blue),
+                    icon: const Icon(Icons.clear, color: Colors.blue),
                     onPressed: () {
                       setState(() {
                         _currentFilter = 'All Categories';
@@ -498,7 +500,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
           Expanded(
             child: ReorderableListView(
               onReorder: _reorderTasks,
-              padding: EdgeInsets.symmetric(vertical: 8.0),
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
               children: <Widget>[
                 for (int index = 0; index < _filteredTasks.length; index++)
                   _buildTodoItem(_filteredTasks[index],
@@ -511,8 +513,8 @@ class _TodoListScreenState extends State<TodoListScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddTodoDialog,
-        child: Icon(Icons.add, color: Colors.white),
         backgroundColor: Colors.blue,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
@@ -544,14 +546,14 @@ class _TodoListScreenState extends State<TodoListScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Filter Tasks'),
+          title: const Text('Filter Tasks'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Add 'All Categories' option
                 RadioListTile<String>(
-                  title: Text('All Categories'),
+                  title: const Text('All Categories'),
                   value: 'All Categories',
                   groupValue: _currentFilter,
                   onChanged: (String? value) {
@@ -572,7 +574,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
                           width: 16,
                           height: 16,
                           color: _getCategoryColor(category),
-                          margin: EdgeInsets.only(right: 8),
+                          margin: const EdgeInsets.only(right: 8),
                         ),
                         Expanded(  // Wrap the Text with Expanded
                           child: Text(
@@ -594,7 +596,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
                       }
                     },
                   );
-                }).toList(),
+                }),
               ],
             ),
           ),
@@ -603,7 +605,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('Close'),
+              child: const Text('Close'),
             ),
           ],
         );
