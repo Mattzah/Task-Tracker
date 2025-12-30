@@ -60,12 +60,14 @@ class _TodoListScreenState extends State<TodoListScreen> {
   // Custom categories will be stored in SharedPreferences
   List<String> _customCategories = [];
   final Map<String, Color> _categoryColors = {};
+  int _points = 0;
 
   @override
   void initState() {
     super.initState();
     _loadTasks(); // Load the tasks when the app starts
     _loadCustomCategories(); // Load the tasks when the app starts
+    _loadPoints(); // Load the points
   }
 
   void _clearCompletedTasks() {
@@ -97,6 +99,33 @@ class _TodoListScreenState extends State<TodoListScreen> {
       ),
     );
   }
+
+  // Point tracking methods
+  Future<void> _loadPoints() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? lastResetDate = prefs.getString('lastResetDate');
+    final String today = DateTime.now().toIso8601String().split('T')[0];
+
+    // Reset if it's a new day
+    if (lastResetDate != today) {
+      setState(() {
+        _points = 0;
+      });
+      prefs.setInt('points', 0);
+      prefs.setString('lastResetDate', today);
+    } else {
+      setState(() {
+        _points = prefs.getInt('points') ?? 0;
+      });
+    }
+  }
+
+  Future<void> _savePoints() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setInt('points', _points);
+  }
+
+
   // Save the task list to shared preferences
   Future<void> _saveTasks() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -341,6 +370,45 @@ class _TodoListScreenState extends State<TodoListScreen> {
     }
   }
 
+  Future<void> _editTask(int index) async {
+    final TextEditingController controller = TextEditingController(
+      text: _todoItems[index].description,
+    );
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Edit Task'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              labelText: 'Task description',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (controller.text.isNotEmpty) {
+                  setState(() {
+                    _todoItems[index].description = controller.text;
+                    _saveTasks();
+                  });
+                }
+                Navigator.of(context).pop();
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // Show a confirmation dialog before deleting
   Future<void> _confirmDeleteTask(int index) async {
     final Task task = _todoItems[index];
@@ -381,7 +449,16 @@ class _TodoListScreenState extends State<TodoListScreen> {
   void _toggleTaskCompletion(int index) {
     setState(() {
       _todoItems[index].isCompleted = !_todoItems[index].isCompleted;
-      _saveTasks(); // Save the updated completion status
+
+      // Add/remove points
+      if (_todoItems[index].isCompleted) {
+        _points += 5;
+      } else {
+        _points -= 5;
+      }
+
+      _saveTasks();
+      _savePoints();
     });
   }
 
@@ -411,22 +488,32 @@ class _TodoListScreenState extends State<TodoListScreen> {
   // Build a task item with swipe-to-delete functionality and conditional styling
   Widget _buildTodoItem(Task task, int index) {
     return Dismissible(
-      key: ValueKey(task.description),
-      direction: DismissDirection.endToStart,
-      background: Container(
+      key: ValueKey(task.description + index.toString()),
+      direction: DismissDirection.horizontal,  // Changed to horizontal
+      background: Container(  // Swipe right - Edit
+        color: Colors.blue,
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 20),
+        child: const Icon(Icons.edit, color: Colors.white),
+      ),
+      secondaryBackground: Container(  // Swipe left - Delete
         color: Colors.red,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         child: const Icon(Icons.delete, color: Colors.white),
       ),
       confirmDismiss: (direction) async {
-        await _confirmDeleteTask(index);
+        if (direction == DismissDirection.endToStart) {
+          await _confirmDeleteTask(index);
+        } else if (direction == DismissDirection.startToEnd) {
+          await _editTask(index);
+        }
         return false;
       },
       child: ListTile(
-        dense: true,  // Makes the tile more compact
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),  // Reduces vertical padding
-        visualDensity: const VisualDensity(vertical: -2),  // Further reduces height
+        dense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+        visualDensity: const VisualDensity(vertical: -2),
         leading: Container(
           width: 10,
           color: _getCategoryColor(task.category),
@@ -434,7 +521,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
         title: Text(
           task.description,
           style: TextStyle(
-            fontSize: 14,  // Smaller font (default is ~16)
+            fontSize: 14,
             decoration: task.isCompleted
                 ? TextDecoration.lineThrough
                 : TextDecoration.none,
@@ -449,6 +536,21 @@ class _TodoListScreenState extends State<TodoListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leadingWidth: 80,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8.0),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.emoji_events, color: Colors.white, size: 20),
+              const SizedBox(width: 4),
+              Text(
+                '$_points pts',
+                style: TextStyle(color: Colors.white, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
         title: const Text(
           'Tasks',
           style: TextStyle(color: Colors.white),
