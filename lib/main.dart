@@ -456,13 +456,25 @@ class _TodoListScreenState extends State<TodoListScreen> {
         backgroundColor: Colors.blue,
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_sweep, color: Colors.white),
-            onPressed: _clearCompletedTasks,
-          ),
-          IconButton(
-            icon: const Icon(Icons.filter_list, color: Colors.white),
-            onPressed: _showFilterDialog,
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            onSelected: (value) {
+              if (value == 'filter') {
+                _showFilterDialog();
+              } else if (value == 'clear') {
+                _clearCompletedTasks();
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'filter',
+                child: Text('Filter Tasks'),
+              ),
+              const PopupMenuItem<String>(
+                value: 'clear',
+                child: Text('Clear Completed'),
+              ),
+            ],
           ),
         ],
       ),
