@@ -5,10 +5,25 @@ class PointsService {
   static const String _lastResetDateKey = 'lastResetDate';
   static const int _pointsPerTask = 5;
 
+  /// Call this once on app initialization to check/reset daily points
+  Future<void> checkAndResetDaily() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastResetDate = prefs.getString(_lastResetDateKey);
+      final today = DateTime.now().toIso8601String().split('T')[0];
+
+      if (lastResetDate != today) {
+        await prefs.setInt(_pointsKey, 0);
+        await prefs.setString(_lastResetDateKey, today);
+      }
+    } catch (e) {
+      throw Exception('Failed to reset daily points: $e');
+    }
+  }
+
   Future<int> loadPoints() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await _checkAndResetDaily(prefs);
       return prefs.getInt(_pointsKey) ?? 0;
     } catch (e) {
       throw Exception('Failed to load points: $e');
@@ -30,15 +45,5 @@ class PointsService {
         : currentPoints - _pointsPerTask;
     await savePoints(newPoints);
     return newPoints;
-  }
-
-  Future<void> _checkAndResetDaily(SharedPreferences prefs) async {
-    final lastResetDate = prefs.getString(_lastResetDateKey);
-    final today = DateTime.now().toIso8601String().split('T')[0];
-
-    if (lastResetDate != today) {
-      await prefs.setInt(_pointsKey, 0);
-      await prefs.setString(_lastResetDateKey, today);
-    }
   }
 }

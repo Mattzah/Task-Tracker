@@ -32,6 +32,9 @@ class _TodoListScreenState extends State<TodoListScreen> {
 
   Future<void> _loadData() async {
     try {
+      // Check and reset points ONCE on app initialization
+      await _pointsService.checkAndResetDaily();
+
       final tasks = await _storageService.loadTasks();
       final categoryData = await _storageService.loadCategories();
       final points = await _pointsService.loadPoints();
@@ -149,7 +152,11 @@ class _TodoListScreenState extends State<TodoListScreen> {
   void _reorderTasks(int oldIndex, int newIndex) {
     final filteredTasks = _getFilteredTasks();
     final task = filteredTasks[oldIndex];
-    final actualOldIndex = _tasks.indexOf(task);
+
+    // FIXED: Use task ID instead of indexOf for reliable matching
+    final actualOldIndex = _tasks.indexWhere((t) => t.id == task.id);
+
+    if (actualOldIndex == -1) return; // Safety check
 
     setState(() {
       if (newIndex > oldIndex) {
