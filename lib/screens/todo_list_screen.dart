@@ -6,6 +6,7 @@ import '../widgets/task_item.dart';
 import '../widgets/dialogs/add_task_dialog.dart';
 import '../widgets/dialogs/edit_task_dialog.dart';
 import '../widgets/dialogs/filter_dialog.dart';
+import '../widgets/dialogs/stats_dialog.dart';
 
 class TodoListScreen extends StatefulWidget {
   const TodoListScreen({super.key});
@@ -159,7 +160,8 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
       task.isCompleted = !task.isCompleted;
     });
     try {
-      _points = await _pointsService.addPoints(_points, task.isCompleted);
+      final newPoints = await _pointsService.addPoints(_points, task.isCompleted);
+      setState(() => _points = newPoints);
       await _saveTasks();
     } catch (e) {
       _showError('POINTS ERROR: $e');
@@ -168,13 +170,26 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
 
   void _reorderTasks(int oldIndex, int newIndex) {
     final filteredTasks = _getFilteredTasks();
-    final task = filteredTasks[oldIndex];
-    final actualOldIndex = _tasks.indexWhere((t) => t.id == task.id);
-    if (actualOldIndex == -1) return;
+    if (newIndex > oldIndex) newIndex -= 1;
+
+    // Apply the reorder within the filtered/sorted list
+    final movedTask = filteredTasks[oldIndex];
+    final reordered = List<Task>.from(filteredTasks)
+      ..removeAt(oldIndex)
+      ..insert(newIndex, movedTask);
+
     setState(() {
-      if (newIndex > oldIndex) newIndex -= 1;
-      _tasks.removeAt(actualOldIndex);
-      _tasks.insert(newIndex.clamp(0, _tasks.length), task);
+      // filteredTasks occupies certain slots in _tasks (in ascending index order).
+      // Reassign those same slots with the reordered sequence so the new order
+      // is preserved when _getFilteredTasks() sorts again.
+      final filteredIds = {for (final t in filteredTasks) t.id};
+      final slots = <int>[
+        for (int i = 0; i < _tasks.length; i++)
+          if (filteredIds.contains(_tasks[i].id)) i,
+      ];
+      for (int i = 0; i < slots.length; i++) {
+        _tasks[slots[i]] = reordered[i];
+      }
     });
     _saveTasks();
   }
@@ -277,27 +292,34 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
       leadingWidth: 100,
       leading: Padding(
         padding: const EdgeInsets.only(left: 12),
-        child: AnimatedBuilder(
-          animation: _pulseAnimation,
-          builder: (context, child) => Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.bolt,
-                color: const Color(0xFFFFD700).withOpacity(_pulseAnimation.value),
-                size: 16,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '$_points',
-                style: TextStyle(
+        child: GestureDetector(
+          onTap: () => showDialog(
+            context: context,
+            builder: (context) =>
+                StatsDialog(pointsService: _pointsService),
+          ),
+          child: AnimatedBuilder(
+            animation: _pulseAnimation,
+            builder: (context, child) => Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.bolt,
                   color: const Color(0xFFFFD700).withOpacity(_pulseAnimation.value),
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'RobotoMono',
+                  size: 16,
                 ),
-              ),
-            ],
+                const SizedBox(width: 4),
+                Text(
+                  '$_points',
+                  style: TextStyle(
+                    color: const Color(0xFFFFD700).withOpacity(_pulseAnimation.value),
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'RobotoMono',
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
