@@ -7,6 +7,7 @@ import '../widgets/dialogs/add_task_dialog.dart';
 import '../widgets/dialogs/edit_task_dialog.dart';
 import '../widgets/dialogs/filter_dialog.dart';
 import '../widgets/dialogs/stats_dialog.dart';
+import '../widgets/dialogs/notification_settings_dialog.dart';
 
 class TodoListScreen extends StatefulWidget {
   const TodoListScreen({super.key});
@@ -213,6 +214,13 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
     );
   }
 
+  void _showNotificationSettings() {
+    showDialog(
+      context: context,
+      builder: (context) => const NotificationSettingsDialog(),
+    );
+  }
+
   Future<void> _showFilterDialog() async {
     final filter = await showDialog<String>(
       context: context,
@@ -362,10 +370,12 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
           onSelected: (value) {
             if (value == 'filter') _showFilterDialog();
             else if (value == 'clear') _clearCompletedTasks();
+            else if (value == 'notifications') _showNotificationSettings();
           },
           itemBuilder: (context) => [
             _buildMenuItem('filter', 'Filter', Icons.filter_list),
             _buildMenuItem('clear', 'Clear Completed', Icons.delete_sweep),
+            _buildMenuItem('notifications', 'Notification Settings', Icons.notifications_outlined),
           ],
         ),
       ],
