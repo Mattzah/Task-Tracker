@@ -25,6 +25,7 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
   final Map<String, Color> _categoryColors = {};
   int _points = 0;
   String _currentFilter = 'All Categories';
+  String _dateFilter = 'Today';
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -117,6 +118,7 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
           description: result['description'],
           isCompleted: false,
           category: result['category'],
+          dueDate: result['dueDate'],
         ));
       });
       await _saveTasks();
@@ -134,16 +136,18 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
   }
 
   Future<void> _editTask(Task task) async {
-    final newDescription = await showDialog<String>(
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => EditTaskDialog(
         initialDescription: task.description,
+        initialDueDate: task.dueDate,
       ),
     );
 
-    if (newDescription != null && newDescription.isNotEmpty) {
+    if (result != null) {
       setState(() {
-        task.description = newDescription;
+        task.description = result['description'];
+        task.dueDate = result['dueDate'];
       });
       await _saveTasks();
     }
@@ -222,17 +226,19 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
   }
 
   Future<void> _showFilterDialog() async {
-    final filter = await showDialog<String>(
+    final result = await showDialog<Map<String, String>>(
       context: context,
       builder: (context) => FilterDialog(
         currentFilter: _currentFilter,
+        currentDateFilter: _dateFilter,
         categories: _categories,
         categoryColors: _categoryColors,
       ),
     );
-    if (filter != null) {
+    if (result != null) {
       setState(() {
-        _currentFilter = filter;
+        _currentFilter = result['category']!;
+        _dateFilter = result['dateFilter']!;
       });
     }
   }
@@ -241,6 +247,16 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
     List<Task> filtered = _currentFilter == 'All Categories'
         ? List.from(_tasks)
         : _tasks.where((t) => t.category == _currentFilter).toList();
+
+    if (_dateFilter == 'Today') {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      filtered = filtered.where((t) {
+        if (t.dueDate == null) return true;
+        final due = DateTime(t.dueDate!.year, t.dueDate!.month, t.dueDate!.day);
+        return !due.isAfter(today);
+      }).toList();
+    }
 
     filtered.sort((a, b) {
       if (a.isCompleted == b.isCompleted) return 0;
@@ -263,7 +279,7 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
       body: Column(
         children: [
           _buildScanLine(),
-          if (_currentFilter != 'All Categories') _buildFilterBadge(),
+          if (_currentFilter != 'All Categories' || _dateFilter != 'Today') _buildFilterBadge(),
           Expanded(
             child: filteredTasks.isEmpty
                 ? _buildEmptyState()
@@ -418,33 +434,50 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0D1526),
-              border: Border.all(color: const Color(0xFF00D4FF), width: 0.5),
+          if (_dateFilter != 'Today') ...[
+            _buildBadgeChip(
+              label: _dateFilter.toUpperCase(),
+              color: const Color(0xFF00FF88),
+              onClear: () => setState(() => _dateFilter = 'Today'),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.filter_list, color: Color(0xFF00D4FF), size: 11),
-                const SizedBox(width: 6),
-                Text(
-                  _currentFilter.toUpperCase(),
-                  style: const TextStyle(
-                    color: Color(0xFF00D4FF),
-                    fontSize: 10,
-                    fontFamily: 'RobotoMono',
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () => setState(() => _currentFilter = 'All Categories'),
-                  child: const Icon(Icons.close, color: Color(0xFF607B96), size: 11),
-                ),
-              ],
+            const SizedBox(width: 6),
+          ],
+          if (_currentFilter != 'All Categories')
+            _buildBadgeChip(
+              label: _currentFilter.toUpperCase(),
+              color: const Color(0xFF00D4FF),
+              onClear: () => setState(() => _currentFilter = 'All Categories'),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBadgeChip({required String label, required Color color, required VoidCallback onClear}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D1526),
+        border: Border.all(color: color, width: 0.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.filter_list, color: Color(0xFF607B96), size: 11),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontFamily: 'RobotoMono',
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: onClear,
+            child: const Icon(Icons.close, color: Color(0xFF607B96), size: 11),
           ),
         ],
       ),

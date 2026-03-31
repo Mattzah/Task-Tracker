@@ -19,6 +19,33 @@ class AddTaskDialog extends StatefulWidget {
 class _AddTaskDialogState extends State<AddTaskDialog> {
   final TextEditingController _taskController = TextEditingController();
   String? _selectedCategory;
+  DateTime? _dueDate;
+
+  static String _formatDate(DateTime date) {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dueDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: Color(0xFF00D4FF),
+            onPrimary: Color(0xFF080C18),
+            surface: Color(0xFF0D1526),
+            onSurface: Color(0xFFB0C4DE),
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) setState(() => _dueDate = picked);
+  }
 
   @override
   void dispose() {
@@ -167,6 +194,44 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                 ),
               ),
             ),
+            const SizedBox(height: 16),
+            _buildLabel('Due Date'),
+            const SizedBox(height: 6),
+            GestureDetector(
+              onTap: _pickDate,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF111D35),
+                  border: Border.all(color: const Color(0xFF1E3A5F)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _dueDate != null ? _formatDate(_dueDate!) : 'No due date',
+                      style: TextStyle(
+                        color: _dueDate != null ? const Color(0xFF00D4FF) : const Color(0xFF3A5472),
+                        fontFamily: 'RobotoMono',
+                        fontSize: 12,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_today, color: Color(0xFF607B96), size: 12),
+                        if (_dueDate != null) ...[
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => setState(() => _dueDate = null),
+                            child: const Icon(Icons.close, color: Color(0xFF607B96), size: 12),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -178,6 +243,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                     Navigator.pop(context, {
                       'description': _taskController.text,
                       'category': _selectedCategory,
+                      'dueDate': _dueDate,
                     });
                   }
                 }),

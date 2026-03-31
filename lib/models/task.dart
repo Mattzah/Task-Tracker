@@ -5,12 +5,14 @@ class Task {
   String description;
   bool isCompleted;
   String category;
+  DateTime? dueDate;
 
   Task({
     String? id,
     required this.description,
     required this.isCompleted,
     this.category = 'Uncategorized',
+    this.dueDate,
   }) : id = id ?? const Uuid().v4();
 
   Map<String, dynamic> toJson() => {
@@ -18,6 +20,7 @@ class Task {
     'description': description,
     'isCompleted': isCompleted,
     'category': category,
+    'dueDate': dueDate?.toIso8601String(),
   };
 
   static Task fromJson(Map<String, dynamic> json) {
@@ -26,6 +29,7 @@ class Task {
       description: json['description'],
       isCompleted: json['isCompleted'],
       category: json['category'] ?? 'Uncategorized',
+      dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
     );
   }
 }
