@@ -6,6 +6,7 @@ class StorageService {
   static const String _tasksKey = 'tasks';
   static const String _categoriesKey = 'customCategories';
   static const String _categoryColorPrefix = 'category_color_';
+  static const String _lastCleanupKey = 'lastDailyCleanup';
 
   Future<void> saveTasks(List<Task> tasks) async {
     try {
@@ -43,6 +44,19 @@ class StorageService {
     } catch (e) {
       throw Exception('Failed to save categories: $e');
     }
+  }
+
+  /// Returns true the first time this is called on any given calendar day,
+  /// false on subsequent calls the same day. Call this on app open to gate
+  /// the daily cleanup.
+  Future<bool> shouldPerformDailyCleanup() async {
+    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now();
+    final todayStr =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    if (prefs.getString(_lastCleanupKey) == todayStr) return false;
+    await prefs.setString(_lastCleanupKey, todayStr);
+    return true;
   }
 
   Future<Map<String, dynamic>> loadCategories() async {

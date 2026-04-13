@@ -6,6 +6,7 @@ class Task {
   bool isCompleted;
   String category;
   DateTime? dueDate;
+  bool isRecurring;
 
   Task({
     String? id,
@@ -13,6 +14,7 @@ class Task {
     required this.isCompleted,
     this.category = 'Uncategorized',
     this.dueDate,
+    this.isRecurring = false,
   }) : id = id ?? const Uuid().v4();
 
   Map<String, dynamic> toJson() => {
@@ -21,6 +23,7 @@ class Task {
     'isCompleted': isCompleted,
     'category': category,
     'dueDate': dueDate?.toIso8601String(),
+    'isRecurring': isRecurring,
   };
 
   static Task fromJson(Map<String, dynamic> json) {
@@ -30,6 +33,7 @@ class Task {
       isCompleted: json['isCompleted'],
       category: json['category'] ?? 'Uncategorized',
       dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
+      isRecurring: json['isRecurring'] ?? false,
     );
   }
 }

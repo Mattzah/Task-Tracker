@@ -65,7 +65,8 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
         side: BorderSide(color: Color(0xFF00D4FF), width: 1),
         borderRadius: BorderRadius.zero,
       ),
-      child: Padding(
+      child: SingleChildScrollView(
+        child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -191,6 +192,7 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
               ],
             ),
           ],
+        ),
         ),
       ),
     );

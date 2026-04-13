@@ -20,6 +20,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
   final TextEditingController _taskController = TextEditingController();
   String? _selectedCategory;
   DateTime? _dueDate;
+  bool _isRecurring = false;
 
   static String _formatDate(DateTime date) {
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -61,7 +62,8 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
         side: BorderSide(color: Color(0xFF00D4FF), width: 1),
         borderRadius: BorderRadius.zero,
       ),
-      child: Padding(
+      child: SingleChildScrollView(
+        child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -232,6 +234,32 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () => setState(() => _isRecurring = !_isRecurring),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: Checkbox(
+                      value: _isRecurring,
+                      onChanged: (val) => setState(() => _isRecurring = val ?? false),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Recurring Daily',
+                    style: TextStyle(
+                      color: Color(0xFFB0C4DE),
+                      fontFamily: 'RobotoMono',
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -244,12 +272,14 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                       'description': _taskController.text,
                       'category': _selectedCategory,
                       'dueDate': _dueDate,
+                      'isRecurring': _isRecurring,
                     });
                   }
                 }),
               ],
             ),
           ],
+        ),
         ),
       ),
     );

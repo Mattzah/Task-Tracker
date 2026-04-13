@@ -50,6 +50,15 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
     try {
       await _pointsService.checkAndResetDaily();
       final tasks = await _storageService.loadTasks();
+
+      if (await _storageService.shouldPerformDailyCleanup()) {
+        tasks.removeWhere((t) => t.isCompleted && !t.isRecurring);
+        for (final t in tasks) {
+          if (t.isCompleted && t.isRecurring) t.isCompleted = false;
+        }
+        await _storageService.saveTasks(tasks);
+      }
+
       final categoryData = await _storageService.loadCategories();
       final points = await _pointsService.loadPoints();
 
@@ -119,6 +128,7 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
           isCompleted: false,
           category: result['category'],
           dueDate: result['dueDate'],
+          isRecurring: result['isRecurring'] ?? false,
         ));
       });
       await _saveTasks();
