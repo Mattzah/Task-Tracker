@@ -16,6 +16,11 @@ class NotificationService {
   static const String _minuteKey = 'notification_minute';
   static const String _enabledKey = 'notification_enabled';
 
+  static const int _eodReminderId = 2;
+  static const String _eodHourKey = 'eod_notification_hour';
+  static const String _eodMinuteKey = 'eod_notification_minute';
+  static const String _eodEnabledKey = 'eod_notification_enabled';
+
   Future<void> initialize() async {
     tzdata.initializeTimeZones();
     final timezoneName = await FlutterTimezone.getLocalTimezone();
@@ -78,12 +83,56 @@ class NotificationService {
     await prefs.setBool(_enabledKey, false);
   }
 
-  Future<({bool enabled, int hour, int minute})> loadSettings() async {
+  Future<void> scheduleEndOfDayReminder(int hour, int minute) async {
+    await _plugin.cancel(_eodReminderId);
+
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduledTime = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    if (scheduledTime.isBefore(now)) {
+      scheduledTime = scheduledTime.add(const Duration(days: 1));
+    }
+
+    await _plugin.zonedSchedule(
+      _eodReminderId,
+      'Task Tracker',
+      'Have you completed all your tasks today? Complete your end of day routine!',
+      scheduledTime,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'eod_reminder',
+          'End of Day Reminder',
+          channelDescription: 'Daily end of day task reminder',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_eodHourKey, hour);
+    await prefs.setInt(_eodMinuteKey, minute);
+    await prefs.setBool(_eodEnabledKey, true);
+  }
+
+  Future<void> cancelEndOfDayReminder() async {
+    await _plugin.cancel(_eodReminderId);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_eodEnabledKey, false);
+  }
+
+  Future<({bool enabled, int hour, int minute, bool eodEnabled, int eodHour, int eodMinute})> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     return (
       enabled: prefs.getBool(_enabledKey) ?? false,
       hour: prefs.getInt(_hourKey) ?? 8,
       minute: prefs.getInt(_minuteKey) ?? 0,
+      eodEnabled: prefs.getBool(_eodEnabledKey) ?? false,
+      eodHour: prefs.getInt(_eodHourKey) ?? 20,
+      eodMinute: prefs.getInt(_eodMinuteKey) ?? 0,
     );
   }
 }

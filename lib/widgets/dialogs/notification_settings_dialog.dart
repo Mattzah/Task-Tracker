@@ -12,6 +12,8 @@ class _NotificationSettingsDialogState extends State<NotificationSettingsDialog>
   final NotificationService _notificationService = NotificationService();
   bool _enabled = false;
   TimeOfDay _time = const TimeOfDay(hour: 8, minute: 0);
+  bool _eodEnabled = false;
+  TimeOfDay _eodTime = const TimeOfDay(hour: 20, minute: 0);
   bool _loading = true;
 
   @override
@@ -25,14 +27,16 @@ class _NotificationSettingsDialogState extends State<NotificationSettingsDialog>
     setState(() {
       _enabled = settings.enabled;
       _time = TimeOfDay(hour: settings.hour, minute: settings.minute);
+      _eodEnabled = settings.eodEnabled;
+      _eodTime = TimeOfDay(hour: settings.eodHour, minute: settings.eodMinute);
       _loading = false;
     });
   }
 
-  Future<void> _pickTime() async {
+  Future<void> _pickTime(TimeOfDay initial, ValueChanged<TimeOfDay> onPicked) async {
     final picked = await showTimePicker(
       context: context,
-      initialTime: _time,
+      initialTime: initial,
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           timePickerTheme: const TimePickerThemeData(
@@ -50,17 +54,67 @@ class _NotificationSettingsDialogState extends State<NotificationSettingsDialog>
         child: child!,
       ),
     );
-    if (picked != null) setState(() => _time = picked);
+    if (picked != null) onPicked(picked);
   }
 
   Future<void> _save() async {
+    await _notificationService.requestPermissions();
+
     if (_enabled) {
-      await _notificationService.requestPermissions();
       await _notificationService.scheduleDailyReminder(_time.hour, _time.minute);
     } else {
       await _notificationService.cancelDailyReminder();
     }
+
+    if (_eodEnabled) {
+      await _notificationService.scheduleEndOfDayReminder(_eodTime.hour, _eodTime.minute);
+    } else {
+      await _notificationService.cancelEndOfDayReminder();
+    }
+
     if (mounted) Navigator.of(context).pop();
+  }
+
+  Widget _buildTimeRow(String label, TimeOfDay time, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF111D35),
+          border: Border.all(color: const Color(0xFF1E3A5F)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF607B96),
+                fontFamily: 'RobotoMono',
+                fontSize: 11,
+              ),
+            ),
+            Row(
+              children: [
+                Text(
+                  time.format(context),
+                  style: const TextStyle(
+                    color: Color(0xFF00D4FF),
+                    fontFamily: 'RobotoMono',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(Icons.edit, color: Color(0xFF607B96), size: 12),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -82,11 +136,11 @@ class _NotificationSettingsDialogState extends State<NotificationSettingsDialog>
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  const Row(
                     children: [
-                      const Icon(Icons.notifications_outlined, color: Color(0xFF00D4FF), size: 14),
-                      const SizedBox(width: 8),
-                      const Text(
+                      Icon(Icons.notifications_outlined, color: Color(0xFF00D4FF), size: 14),
+                      SizedBox(width: 8),
+                      Text(
                         'NOTIFICATIONS',
                         style: TextStyle(
                           color: Color(0xFF00D4FF),
@@ -101,6 +155,8 @@ class _NotificationSettingsDialogState extends State<NotificationSettingsDialog>
                   const SizedBox(height: 4),
                   Container(height: 1, color: const Color(0xFF1E3A5F)),
                   const SizedBox(height: 16),
+
+                  // Morning reminder
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -123,46 +179,47 @@ class _NotificationSettingsDialogState extends State<NotificationSettingsDialog>
                   ),
                   if (_enabled) ...[
                     const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: _pickTime,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF111D35),
-                          border: Border.all(color: const Color(0xFF1E3A5F)),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Reminder Time',
-                              style: TextStyle(
-                                color: Color(0xFF607B96),
-                                fontFamily: 'RobotoMono',
-                                fontSize: 11,
-                              ),
-                            ),
-                            Row(
-                              children: [
-                                Text(
-                                  _time.format(context),
-                                  style: const TextStyle(
-                                    color: Color(0xFF00D4FF),
-                                    fontFamily: 'RobotoMono',
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                const Icon(Icons.edit, color: Color(0xFF607B96), size: 12),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
+                    _buildTimeRow(
+                      'Reminder Time',
+                      _time,
+                      () => _pickTime(_time, (t) => setState(() => _time = t)),
                     ),
                   ],
+
+                  const SizedBox(height: 12),
+                  Container(height: 1, color: const Color(0xFF1E3A5F)),
+                  const SizedBox(height: 12),
+
+                  // End of day reminder
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'End of Day Reminder',
+                        style: TextStyle(
+                          color: Color(0xFFB0C4DE),
+                          fontFamily: 'RobotoMono',
+                          fontSize: 12,
+                        ),
+                      ),
+                      Switch(
+                        value: _eodEnabled,
+                        onChanged: (val) => setState(() => _eodEnabled = val),
+                        activeColor: const Color(0xFF00FF88),
+                        inactiveThumbColor: const Color(0xFF607B96),
+                        inactiveTrackColor: const Color(0xFF1E3A5F),
+                      ),
+                    ],
+                  ),
+                  if (_eodEnabled) ...[
+                    const SizedBox(height: 8),
+                    _buildTimeRow(
+                      'Reminder Time',
+                      _eodTime,
+                      () => _pickTime(_eodTime, (t) => setState(() => _eodTime = t)),
+                    ),
+                  ],
+
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,

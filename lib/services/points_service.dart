@@ -21,7 +21,6 @@ class PointsService {
   static const String _pointsKey = 'points';
   static const String _lastResetDateKey = 'lastResetDate';
   static const String _dailyHistoryKey = 'dailyPointsHistory';
-  static const int _pointsPerTask = 5;
 
   String _todayKey() => DateTime.now().toIso8601String().split('T')[0];
 
@@ -76,10 +75,10 @@ class PointsService {
     }
   }
 
-  Future<int> addPoints(int currentPoints, bool isCompleting) async {
+  Future<int> addPoints(int currentPoints, bool isCompleting, int pointValue) async {
     final newPoints = isCompleting
-        ? currentPoints + _pointsPerTask
-        : currentPoints - _pointsPerTask;
+        ? currentPoints + pointValue
+        : currentPoints - pointValue;
     await savePoints(newPoints);
     return newPoints;
   }

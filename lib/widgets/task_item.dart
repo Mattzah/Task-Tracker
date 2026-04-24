@@ -128,20 +128,25 @@ class TaskItem extends StatelessWidget {
                   ),
                 ),
                 if (!task.isCompleted)
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: categoryColor.withOpacity(0.6),
-                      boxShadow: [
-                        BoxShadow(
-                          color: categoryColor.withOpacity(0.4),
-                          blurRadius: 4,
-                          spreadRadius: 1,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${task.pointValue}',
+                        style: TextStyle(
+                          color: categoryColor,
+                          fontFamily: 'RobotoMono',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(
+                        Icons.bolt,
+                        color: categoryColor,
+                        size: 14,
+                      ),
+                    ],
                   ),
               ],
             ),

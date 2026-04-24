@@ -175,7 +175,7 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
       task.isCompleted = !task.isCompleted;
     });
     try {
-      final newPoints = await _pointsService.addPoints(_points, task.isCompleted);
+      final newPoints = await _pointsService.addPoints(_points, task.isCompleted, task.pointValue);
       setState(() => _points = newPoints);
       await _saveTasks();
     } catch (e) {

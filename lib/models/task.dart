@@ -36,4 +36,14 @@ class Task {
       isRecurring: json['isRecurring'] ?? false,
     );
   }
+
+  /// 5 pts if the task has a due date strictly after today (planned ahead),
+  /// otherwise 1 pt (no due date, or due today / overdue).
+  int get pointValue {
+    if (dueDate == null) return 1;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final due = DateTime(dueDate!.year, dueDate!.month, dueDate!.day);
+    return due.isAfter(today) ? 5 : 1;
+  }
 }
