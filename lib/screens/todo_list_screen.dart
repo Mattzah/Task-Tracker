@@ -24,6 +24,7 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
   List<String> _categories = [];
   final Map<String, Color> _categoryColors = {};
   int _points = 0;
+  String _level = 'Beginner';
   String _currentFilter = 'All Categories';
   String _dateFilter = 'Today';
   late AnimationController _pulseController;
@@ -49,6 +50,7 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
   Future<void> _loadData() async {
     try {
       await _pointsService.checkAndResetDaily();
+      final level = await _pointsService.getUserLevel();
       final tasks = await _storageService.loadTasks();
 
       if (await _storageService.shouldPerformDailyCleanup()) {
@@ -71,6 +73,7 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
           ),
         );
         _points = points;
+        _level = level;
       });
     } catch (e) {
       _showError('LOAD ERROR: $e');
@@ -279,6 +282,14 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
     return _categoryColors[category] ?? const Color(0xFF1E3A5F);
   }
 
+  Color get _levelColor {
+    switch (_level) {
+      case 'Expert':       return const Color(0xFFFFD700);
+      case 'Intermediate': return const Color(0xFF00D4FF);
+      default:             return const Color(0xFF607B96);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final filteredTasks = _getFilteredTasks();
@@ -357,30 +368,69 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
           ),
         ),
       ),
-      title: Row(
+      title: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: const BoxDecoration(
-              color: Color(0xFF00FF88),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(color: Color(0xFF00FF88), blurRadius: 6, spreadRadius: 1),
-              ],
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF00FF88),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(color: Color(0xFF00FF88), blurRadius: 6, spreadRadius: 1),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'TASK TRACKER',
+                style: TextStyle(
+                  color: Color(0xFF00D4FF),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 4,
+                  fontFamily: 'RobotoMono',
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
-          const Text(
-            'TASK TRACKER',
-            style: TextStyle(
-              color: Color(0xFF00D4FF),
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 4,
-              fontFamily: 'RobotoMono',
-            ),
+          const SizedBox(height: 2),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '[ ',
+                style: TextStyle(
+                  color: _levelColor.withOpacity(0.5),
+                  fontSize: 8,
+                  fontFamily: 'RobotoMono',
+                  letterSpacing: 0,
+                ),
+              ),
+              Text(
+                _level.toUpperCase(),
+                style: TextStyle(
+                  color: _levelColor,
+                  fontSize: 8,
+                  fontFamily: 'RobotoMono',
+                  letterSpacing: 2,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                ' ]',
+                style: TextStyle(
+                  color: _levelColor.withOpacity(0.5),
+                  fontSize: 8,
+                  fontFamily: 'RobotoMono',
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
           ),
         ],
       ),

@@ -21,6 +21,7 @@ class PointsService {
   static const String _pointsKey = 'points';
   static const String _lastResetDateKey = 'lastResetDate';
   static const String _dailyHistoryKey = 'dailyPointsHistory';
+  static const String _levelKey = 'user_level';
 
   String _todayKey() => DateTime.now().toIso8601String().split('T')[0];
 
@@ -33,8 +34,9 @@ class PointsService {
       final today = _todayKey();
 
       if (lastResetDate == null) {
-        // First run — just record today's date
+        // First run — record today's date and set initial level
         await prefs.setString(_lastResetDateKey, today);
+        await prefs.setString(_levelKey, 'Beginner');
       } else if (lastResetDate != today) {
         // New day: persist previous day's points into history before resetting
         final currentPoints = prefs.getInt(_pointsKey) ?? 0;
@@ -43,6 +45,10 @@ class PointsService {
         }
         await prefs.setInt(_pointsKey, 0);
         await prefs.setString(_lastResetDateKey, today);
+
+        // Compute and store the level for this new day based on yesterday's data
+        final level = _computeLevel(prefs);
+        await prefs.setString(_levelKey, level);
       }
     } catch (e) {
       throw Exception('Failed to reset daily points: $e');
@@ -55,6 +61,32 @@ class PointsService {
     final history = Map<String, int>.from(jsonDecode(historyJson));
     history[date] = points;
     await prefs.setString(_dailyHistoryKey, jsonEncode(history));
+  }
+
+  /// Computes the user's level from the current history snapshot.
+  /// Called synchronously inside [checkAndResetDaily] after history is updated.
+  String _computeLevel(SharedPreferences prefs) {
+    final historyJson = prefs.getString(_dailyHistoryKey) ?? '{}';
+    final history = Map<String, int>.from(jsonDecode(historyJson));
+
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    final yesterdayKey =
+        '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
+    final yesterdayPoints = history[yesterdayKey] ?? 0;
+
+    // Streak is computed from history only (today just started, so 0 pts today
+    // means _calculateCurrentStreak naturally counts backwards from yesterday).
+    final streak = _calculateCurrentStreak(history);
+
+    if (yesterdayPoints > 50 && streak > 3) return 'Expert';
+    if (yesterdayPoints > 1 && streak >= 2 && streak <= 3) return 'Intermediate';
+    return 'Beginner';
+  }
+
+  /// Returns the level that was stored on the most recent daily reset.
+  Future<String> getUserLevel() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_levelKey) ?? 'Beginner';
   }
 
   Future<int> loadPoints() async {
