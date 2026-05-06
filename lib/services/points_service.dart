@@ -79,7 +79,7 @@ class PointsService {
     final streak = _calculateCurrentStreak(history);
 
     if (yesterdayPoints > 50 && streak > 3) return 'Expert';
-    if (yesterdayPoints > 1 && streak >= 2 && streak <= 3) return 'Intermediate';
+    if (yesterdayPoints > 1 && streak >= 2) return 'Intermediate';
     return 'Beginner';
   }
 

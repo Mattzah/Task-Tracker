@@ -46,13 +46,9 @@ class Task {
     );
   }
 
-  /// Points this task is worth when completed:
-  ///
-  /// • No due date                          → 1 pt
-  /// • Due date is in the past              → 1 pt  (would have been 5, demoted)
-  /// • Due date == creation date (same day) → 1 pt
-  /// • Due date > creation date (planned ahead) AND not yet past → 5 pts
+  /// Points this task is worth when completed
   int get pointValue {
+    if (isRecurring) return 2;
     if (dueDate == null) return 1;
 
     final now = DateTime.now();
