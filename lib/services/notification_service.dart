@@ -54,7 +54,7 @@ class NotificationService {
     await _plugin.zonedSchedule(
       _dailyReminderId,
       'Task Tracker',
-      "Check your tasks for today — let's get things done!",
+      "Review your list for today!",
       scheduledTime,
       const NotificationDetails(
         android: AndroidNotificationDetails(
@@ -95,7 +95,7 @@ class NotificationService {
     await _plugin.zonedSchedule(
       _eodReminderId,
       'Task Tracker',
-      'Have you completed all your tasks today? Complete your end of day routine!',
+      'Wind down and review your list!',
       scheduledTime,
       const NotificationDetails(
         android: AndroidNotificationDetails(

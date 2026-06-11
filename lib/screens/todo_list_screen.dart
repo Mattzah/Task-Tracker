@@ -8,6 +8,7 @@ import '../widgets/dialogs/edit_task_dialog.dart';
 import '../widgets/dialogs/filter_dialog.dart';
 import '../widgets/dialogs/stats_dialog.dart';
 import '../widgets/dialogs/notification_settings_dialog.dart';
+import '../widgets/level_celebration_overlay.dart';
 
 class TodoListScreen extends StatefulWidget {
   const TodoListScreen({super.key});
@@ -49,7 +50,7 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
 
   Future<void> _loadData() async {
     try {
-      await _pointsService.checkAndResetDaily();
+      final isNewDay = await _pointsService.checkAndResetDaily();
       final level = await _pointsService.getUserLevel();
       final tasks = await _storageService.loadTasks();
 
@@ -75,9 +76,31 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
         _points = points;
         _level = level;
       });
+
+      // Show celebration on first open of a new day if level is Intermediate or Expert
+      if (isNewDay && level != 'Beginner' && mounted) {
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _showLevelCelebration(),
+        );
+      }
     } catch (e) {
       _showError('LOAD ERROR: $e');
     }
+  }
+
+  void _showLevelCelebration() {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss',
+      barrierColor: Colors.black.withOpacity(0.75),
+      transitionDuration: const Duration(milliseconds: 400),
+      pageBuilder: (ctx, _, __) => LevelCelebrationOverlay(level: _level),
+      transitionBuilder: (ctx, anim, _, child) => FadeTransition(
+        opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
+        child: child,
+      ),
+    );
   }
 
   Future<void> _saveTasks() async {

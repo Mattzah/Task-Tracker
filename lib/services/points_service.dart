@@ -26,17 +26,18 @@ class PointsService {
   String _todayKey() => DateTime.now().toIso8601String().split('T')[0];
 
   /// Call this once on app initialization to check/reset daily points.
-  /// Before resetting, saves the previous day's earned points to history.
-  Future<void> checkAndResetDaily() async {
+  /// Returns [true] if this is the first open of a new day, [false] otherwise.
+  Future<bool> checkAndResetDaily() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final lastResetDate = prefs.getString(_lastResetDateKey);
       final today = _todayKey();
 
       if (lastResetDate == null) {
-        // First run — record today's date and set initial level
+        // Very first run — set up defaults, no celebration needed yet
         await prefs.setString(_lastResetDateKey, today);
         await prefs.setString(_levelKey, 'Beginner');
+        return false;
       } else if (lastResetDate != today) {
         // New day: persist previous day's points into history before resetting
         final currentPoints = prefs.getInt(_pointsKey) ?? 0;
@@ -49,7 +50,9 @@ class PointsService {
         // Compute and store the level for this new day based on yesterday's data
         final level = _computeLevel(prefs);
         await prefs.setString(_levelKey, level);
+        return true; // ← first open of the day
       }
+      return false; // already ran today
     } catch (e) {
       throw Exception('Failed to reset daily points: $e');
     }
