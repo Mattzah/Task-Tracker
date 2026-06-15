@@ -126,6 +126,34 @@ class _StatsDialogState extends State<StatsDialog> {
               ? _formatDate(stats.biggestDayDate!)
               : null,
         ),
+        const SizedBox(height: 10),
+        _buildStatRow(
+          icon: Icons.rocket_launch,
+          iconColor: const Color(0xFFFFD700),
+          label: 'RANK',
+          value: stats.currentLevel,
+        ),
+        const SizedBox(height: 10),
+        _buildStatRow(
+          icon: Icons.shield,
+          iconColor: const Color(0xFF00D4FF),
+          label: 'STREAK SHIELDS',
+          value: '${stats.shields} remaining',
+        ),
+        const SizedBox(height: 10),
+        _buildStatRow(
+          icon: Icons.bolt,
+          iconColor: const Color(0xFFFF6B35),
+          label: 'HIGH OUTPUT WEEK',
+          value: stats.highOutputWeek ? 'ACTIVE' : 'NOT YET',
+        ),
+        const SizedBox(height: 10),
+        _buildStatRow(
+          icon: Icons.speed,
+          iconColor: const Color(0xFF00FF88),
+          label: 'STREAK BONUS',
+          value: '${((stats.streakMultiplier - 1) * 100).round()}% live boost',
+        ),
       ],
     );
   }

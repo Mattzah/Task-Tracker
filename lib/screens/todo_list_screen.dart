@@ -24,8 +24,8 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
   final List<Task> _tasks = [];
   List<String> _categories = [];
   final Map<String, Color> _categoryColors = {};
-  int _points = 0;
-  String _level = 'Beginner';
+  double _points = 0;
+  String _level = 'Cadet';
   String _currentFilter = 'All Categories';
   String _dateFilter = 'Today';
   late AnimationController _pulseController;
@@ -77,8 +77,8 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
         _level = level;
       });
 
-      // Show celebration on first open of a new day if level is Intermediate or Expert
-      if (isNewDay && level != 'Beginner' && mounted) {
+      // Show celebration on first open of a new day if level is above Cadet
+      if (isNewDay && level != 'Cadet' && mounted) {
         WidgetsBinding.instance.addPostFrameCallback(
           (_) => _showLevelCelebration(),
         );
@@ -292,6 +292,18 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
         final due = DateTime(t.dueDate!.year, t.dueDate!.month, t.dueDate!.day);
         return !due.isAfter(today);
       }).toList();
+    } else if (_dateFilter == 'Tomorrow') {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final tomorrow = today.add(const Duration(days: 1));
+      filtered = filtered.where((t) {
+        if (t.isRecurring) return true;
+        if (t.dueDate == null) return false;
+        final due = DateTime(t.dueDate!.year, t.dueDate!.month, t.dueDate!.day);
+        if (due.isAtSameMomentAs(tomorrow)) return true;
+        if (!t.isCompleted && due.isBefore(today)) return true;
+        return false;
+      }).toList();
     }
 
     filtered.sort((a, b) {
@@ -378,7 +390,7 @@ class _TodoListScreenState extends State<TodoListScreen> with SingleTickerProvid
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '$_points',
+                  '${_points.round()}',
                   style: TextStyle(
                     color: const Color(0xFFFFD700).withOpacity(_pulseAnimation.value),
                     fontSize: 13,

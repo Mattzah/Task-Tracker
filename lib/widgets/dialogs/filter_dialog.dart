@@ -39,7 +39,8 @@ class _FilterDialogState extends State<FilterDialog> {
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
-        child: Column(
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -71,6 +72,7 @@ class _FilterDialogState extends State<FilterDialog> {
             ),
             const SizedBox(height: 6),
             _buildDateOption('Today', 'Today'),
+            _buildDateOption('Tomorrow', 'Tomorrow'),
             _buildDateOption('All Dates', 'All Dates'),
             const SizedBox(height: 14),
             Container(height: 0.5, color: const Color(0xFF1E3A5F)),
@@ -133,6 +135,7 @@ class _FilterDialogState extends State<FilterDialog> {
               ],
             ),
           ],
+          ),
         ),
       ),
     );
